@@ -13,7 +13,7 @@ work=$2
 while :
 do
 	# If the file doens't exists in available dir then stop and clear the running indicator
-    if [ ! -f $DIR/../workers/jobs/$id ]; then
+    if [ ! -f $DIR/../jobs/$id ]; then
         exit;
     fi
     `$work`

@@ -28,7 +28,7 @@ The contents of the *.job file should be the command
 
 ## Example scenario ##
 
-Add a file `task.job` into workers/jobs directory.
+Add a file `task.job` into /jobs directory.
 
 The contents of `task.job` are 
 ```
@@ -48,3 +48,12 @@ Now this is running forever with 1 sec sleep between the load
 
 At some point you decide that the job is enough, so you want to stop it.
 Just remove (or rename the file) task.job and the worker will exit and will stop working
+
+So to summarize:
+
+1. run manager in crontab every minute
+2. throw {unique_id}.job file in /jobs and contents of the file would be the command to be executed
+3. The job would run continuously until the server is restarted or the file is removed
+3. remove the file {unique_id}.job from the /jobs directory and the job will stop
+
+Hope everything is clear

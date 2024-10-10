@@ -9,7 +9,7 @@
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 #check if there are non running jobs
-for file in $DIR/../workers/jobs/*.job
+for file in $DIR/../jobs/*.job
 do
     isworking=`ps aux | grep worker.sh\ ${file##*/} | grep "/bash" | wc -l`
     if [ $isworking == 0 ]; then
