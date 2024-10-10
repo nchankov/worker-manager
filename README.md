@@ -52,7 +52,7 @@ Just remove (or rename the file) task.job and the worker will exit and will stop
 So to summarize:
 
 1. run manager in crontab every minute
-2. throw {unique_id}.job file in /jobs and contents of the file would be the command to be executed
+2. throw {unique_id}.job file in /jobs and contents of the file should be the command to be executed
 3. The job would run continuously until the server is restarted or the file is removed
 3. remove the file {unique_id}.job from the /jobs directory and the job will stop
 
