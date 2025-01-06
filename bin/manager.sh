@@ -14,6 +14,6 @@ do
     isworking=`ps aux | grep worker.sh\ ${file##*/} | grep "/bash" | wc -l`
     if [ $isworking == 0 ]; then
         work=`cat $file`
-        nohup $DIR/worker.sh ${file##*/} "$work" >> /var/log/worker-manager.log &
+        nohup $DIR/worker.sh ${file##*/} "$work" > /dev/null &
     fi
 done
