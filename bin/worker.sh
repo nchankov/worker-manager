@@ -16,7 +16,7 @@ do
     if [ ! -f $DIR/../jobs/$id ]; then
         exit;
     fi
-    `$work`
+    bash $work
 	
     #just to release the resources - 1 second of sleep
     sleep 1
