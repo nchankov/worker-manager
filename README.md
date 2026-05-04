@@ -1,59 +1,107 @@
-# Worker manager
+# Worker Manager #
 
-Ability to manage working processes
+A lightweight, robust process management system designed to keep background tasks running continuously. Whether you're managing message queues or repetitive long-running scripts, Worker Manager ensures your processes stay alive and scales them dynamically based on your needs.
 
-The script in this repository would be used to manage background tasks running continuously.
+## Features ##
 
-There are 2 scripts
+- Continuous Execution: Automatically restarts jobs if they exit.
 
-## 1. Manager ##
+- Dynamic Scaling: Increase or decrease the number of active workers based on external triggers (files, APIs, etc.).
 
-This script check if there are jobs which are not run and start a worker with that job.
-The manager.sh should be adding to crontab like so:
+- Decoupled Architecture: Separation of concerns between high-level task definition (Director), job orchestration (Manager), and execution (Worker).
+
+## Installation ##
+
+### 1. Clone the Repository ###
+
+It is recommended to install the manager in `/usr/local/lib/worker-manager`, but it can be placed anywhere.
 
 ```
-* * * * * /...path.../worker-manager/bin/manager.sh > /dev/null 2>&1
+git clone https://github.com/nchankov/worker-manager.git /usr/local/lib/worker-manager
 ```
 
-On every run the script reads the files in /worker-manager/jobs and if they are not working
-will add them to a loop worker which will run them until the job is not removed from the jobs dir.
+### 2. Configure Crontab ###
 
-If the job is already working, the script wouldn't bother to run it again
+The system relies on a heartbeat check every minute to ensure the Director and Manager are active. Add the following entries to your crontab:
 
-## 2. Worker ##
-
-The script loops until the job is present in the jobs directory. And if it's not present will exit
-
-The contents of the *.job file should be the command
-
-## Example scenario ##
-
-Add a file `task.job` into /jobs directory.
-
-The contents of `task.job` are 
 ```
-echo "Worker doing task 1"
-```
-The contents of the job file would be executed. So make sure it's one-liner. 
-Also make sure the job has extension .job otherwise it woudn't start
-
-Now run the ./bin/manager.sh
-
-it will start 1 worker and you can see if you run
-```
-ps aux | grep "worker.sh task.job"
+* * * * * /usr/local/lib/worker-manager/bin/director.sh > /dev/null 2>&1
+* * * * * /usr/local/lib/worker-manager/bin/manager.sh > /dev/null 2>&1
 ```
 
-Now this is running forever with 1 sec sleep between the load
+## Configuration Modes ##
 
-At some point you decide that the job is enough, so you want to stop it.
-Just remove (or rename the file) task.job and the worker will exit and will stop working
+### 1. Manual Mode (Legacy) ###
 
-So to summarize:
+You can bypass the Director by manually placing .job files in the jobs/ directory. The manager.sh script will detect these and assign them to workers immediately.
 
-1. run manager in crontab every minute
-2. throw {unique_id}.job file in /jobs and contents of the file should be the command to be executed
-3. The job would run continuously until the server is restarted or the file is removed
-3. remove the file {unique_id}.job from the /jobs directory and the job will stop
 
-Hope everything is clear
+### 2. Dynamic Mode (Recommended) ###
+
+Create .task templates in the tasks/ directory. The Director uses these templates to dynamically generate or remove job files based on your specific scaling logic.
+
+## Task Definition Reference ##
+
+Define your tasks in /tasks/[TaskName].task. Each file supports the following variables:
+
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| COMMAND | The actual command or script to be executed. | Yes | - |
+| MIN_JOBS | The floor for how many workers should run. | No | 1 |
+| MAX_JOBS | The ceiling for scaling. | No | |
+| CHECK | Logic/Command to determine the current required job count. | No | -
+
+
+## Task Examples ##
+
+### Basic (Static) ###
+
+A simple task that keeps exactly one worker running.
+
+`./tasks/BasicTask.task`
+
+```
+COMMAND="/path/to/script.sh"
+```
+
+### File-Based Scaling ###
+
+Scales between 2 and 10 workers based on the numerical value inside a text file.
+
+`./tasks/FileCheckTask.task`
+```
+COMMAND="/path/to/script.sh"
+MIN_JOBS=2
+MAX_JOBS=10
+CHECK=$(</path/to/scaling_indicator.txt)
+```
+
+### API-Driven Scaling ###
+
+Fetches the desired worker count from a remote URL.
+
+`./tasks/UrlCheckTask.task`
+```
+COMMAND="/path/to/script.sh"
+MIN_JOBS=2
+MAX_JOBS=10
+CHECK=$(curl -s https://api.yourserver.com/worker-count)
+```
+
+## Core Components ##
+
+### The Director (director.sh) ###
+The "Brain." It runs via cron every minute, evaluates the CHECK logic in your task files, and creates or deletes .job 
+files in the jobs/ folder. It manages the "big picture" of how many workers are needed.
+
+### The Manager (manager.sh) ###
+
+The "Orchestrator." It monitors the jobs/ folder. For every job file present, it ensures a Worker process is active. If 
+a job file is removed, the Manager signals the corresponding worker to stop.
+
+### The Worker (worker.sh) ###
+
+The "Executor." It runs the COMMAND in a loop. As long as its specific .job file exists, it will immediately restart the command if it finishes or crashes.
+License
+
+Distributed under the MIT License. See LICENSE for more information.
